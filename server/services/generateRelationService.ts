@@ -1,4 +1,3 @@
-import { GoogleGenAI } from '@google/genai';
 import Anthropic from '@anthropic-ai/sdk';
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 import {
@@ -6,58 +5,15 @@ import {
   type CardContentInput,
   type RelationPayload,
 } from '../types/relation.js';
-import { buildRelationPrompt, parseRelationPayload } from './relationPrompt.js';
+import {
+  buildRelationUserPrompt,
+  parseRelationPayload,
+  RELATION_SYSTEM_PROMPT,
+} from './relationPrompt.js';
 
-type AiProvider = 'google' | 'anthropic';
+const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-sonnet-20241022';
 
-function getProvider(): AiProvider {
-  const provider = process.env.AI_PROVIDER?.toLowerCase();
-
-  if (provider === 'google' || provider === 'anthropic') {
-    return provider;
-  }
-
-  if (process.env.GEMINI_API_KEY) {
-    return 'google';
-  }
-
-  if (process.env.ANTHROPIC_API_KEY) {
-    return 'anthropic';
-  }
-
-  throw new Error('No AI provider configured');
-}
-
-async function generateWithGoogle(
-  cardA: CardContentInput,
-  cardB: CardContentInput,
-): Promise<RelationPayload> {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured');
-  }
-
-  const ai = new GoogleGenAI({ apiKey });
-  const prompt = buildRelationPrompt(cardA, cardB);
-
-  const response = await ai.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      responseMimeType: 'application/json',
-      responseJsonSchema: relationJsonSchema,
-    },
-  });
-
-  if (!response.text) {
-    throw new Error('AI response did not include text content');
-  }
-
-  return parseRelationPayload(response.text);
-}
-
-async function generateWithAnthropic(
+export async function generateRelation(
   cardA: CardContentInput,
   cardB: CardContentInput,
 ): Promise<RelationPayload> {
@@ -68,12 +24,13 @@ async function generateWithAnthropic(
   }
 
   const client = new Anthropic({ apiKey });
-  const prompt = buildRelationPrompt(cardA, cardB);
+  const userPrompt = buildRelationUserPrompt(cardA, cardB);
 
   const response = await client.messages.parse({
-    model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5',
+    model: process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL,
     max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
+    system: RELATION_SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
     output_config: {
       format: jsonSchemaOutputFormat(relationJsonSchema),
     },
@@ -84,17 +41,4 @@ async function generateWithAnthropic(
   }
 
   return parseRelationPayload(JSON.stringify(response.parsed_output));
-}
-
-export async function generateRelation(
-  cardA: CardContentInput,
-  cardB: CardContentInput,
-): Promise<RelationPayload> {
-  const provider = getProvider();
-
-  if (provider === 'google') {
-    return generateWithGoogle(cardA, cardB);
-  }
-
-  return generateWithAnthropic(cardA, cardB);
 }

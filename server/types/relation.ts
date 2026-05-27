@@ -13,47 +13,25 @@ export interface GenerateRelationRequest {
 }
 
 export interface RelationPayload {
-  relationshipType: string;
-  summary: string;
-  description: string;
-  themes: string[];
-  narrativeHooks: string[];
+  relationDescription: string;
+  suggestedTags: string[];
 }
 
 export const relationJsonSchema = {
   type: 'object',
   properties: {
-    relationshipType: {
+    relationDescription: {
       type: 'string',
       description:
-        'A concise label for how the two cards relate (e.g. "mentor-student", "setting-for-conflict").',
+        'A vivid paragraph describing the narrative relationship between the two story cards.',
     },
-    summary: {
-      type: 'string',
-      description: 'One-sentence overview of the narrative relationship.',
-    },
-    description: {
-      type: 'string',
+    suggestedTags: {
+      type: 'array',
+      items: { type: 'string' },
       description:
-        'A detailed paragraph describing how these story elements interact narratively.',
-    },
-    themes: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Shared or contrasting themes between the two cards.',
-    },
-    narrativeHooks: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'Actionable story hooks or plot beats implied by this relationship.',
+        'Short lowercase tags (2-5) that capture themes, dynamics, or story hooks implied by the relationship.',
     },
   },
-  required: [
-    'relationshipType',
-    'summary',
-    'description',
-    'themes',
-    'narrativeHooks',
-  ],
+  required: ['relationDescription', 'suggestedTags'],
   additionalProperties: false,
 } as const;
