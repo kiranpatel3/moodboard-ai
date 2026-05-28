@@ -47,7 +47,7 @@ export interface GenerateCardRelationResponse {
   suggestedTags: string[];
 }
 
-const GENERATE_RELATION_URL = 'http://localhost:5000/api/generate-relation';
+const GENERATE_RELATION_URL = 'http://localhost:3001/api/generate-relation';
 
 const initialState: BoardState = {
   cards: [],
