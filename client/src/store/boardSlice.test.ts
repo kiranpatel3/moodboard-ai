@@ -3,6 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import boardReducer, {
   addCard,
   addConnection,
+  generateCardRelation,
   updateConnectionDescription,
   type BoardState,
   type NewCard,
@@ -36,6 +37,8 @@ function seedBoardState(overrides: Partial<BoardState> = {}): BoardState {
   return {
     cards: [],
     connections: [],
+    isGeneratingRelation: false,
+    relationError: null,
     ...overrides,
   };
 }
@@ -52,6 +55,8 @@ describe('boardSlice', () => {
       expect(state).toEqual({
         cards: [],
         connections: [],
+        isGeneratingRelation: false,
+        relationError: null,
       });
     });
 
@@ -245,7 +250,7 @@ describe('boardSlice', () => {
                   id: '44444444-4444-4444-8444-444444444444',
                   description: aiGeneratedDescription,
                 }),
-              });
+              } as Response);
             }, 25);
           }),
       );
@@ -288,7 +293,7 @@ describe('boardSlice', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 502,
-      });
+      } as Response);
 
       const store = createTestStore();
       store.dispatch(addConnection(sampleConnection));
@@ -313,7 +318,7 @@ describe('boardSlice', () => {
         .mockReturnValueOnce('66666666-6666-4666-8666-666666666666')
         .mockReturnValueOnce('77777777-7777-4777-8777-777777777777');
 
-      mockFetch.mockResolvedValue({ ok: true });
+      mockFetch.mockResolvedValue({ ok: true } as Response);
 
       const store = createTestStore();
       store.dispatch(
@@ -349,6 +354,133 @@ describe('boardSlice', () => {
 
       expect(connections[0].description).toBe('First AI rewrite');
       expect(connections[1].description).toBe('Second AI rewrite');
+    });
+  });
+
+  describe('generateCardRelation (async thunk integration)', () => {
+    const mockFetch = jest.fn();
+
+    beforeEach(() => {
+      global.fetch = mockFetch as unknown as typeof fetch;
+      mockFetch.mockReset();
+    });
+
+    it('sets loading state while pending and appends a connection on fulfillment', async () => {
+      jest
+        .spyOn(crypto, 'randomUUID')
+        .mockReturnValueOnce('11111111-1111-4111-8111-111111111111')
+        .mockReturnValueOnce('22222222-2222-4222-8222-222222222222')
+        .mockReturnValueOnce('33333333-3333-4333-8333-333333333333');
+
+      mockFetch.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({
+                ok: true,
+                json: async () => ({
+                  relationDescription: aiGeneratedDescription,
+                  suggestedTags: ['mystery', 'urban'],
+                }),
+              } as Response);
+            }, 25);
+          }),
+      );
+
+      const store = createTestStore();
+      store.dispatch(addCard(sampleCard));
+      store.dispatch(
+        addCard({
+          type: 'setting',
+          title: 'The Glass Quarter',
+          content: 'Mirrored towers refract memory into prismatic corridors.',
+          tags: ['urban', 'sci-fi'],
+        }),
+      );
+
+      const [cardA, cardB] = store.getState().board.cards;
+      const pendingAction = store.dispatch(
+        generateCardRelation({ cardAId: cardA.id, cardBId: cardB.id }),
+      );
+
+      expect(store.getState().board.isGeneratingRelation).toBe(true);
+      expect(store.getState().board.relationError).toBeNull();
+      expect(store.getState().board.connections).toHaveLength(0);
+
+      const result = await pendingAction;
+
+      expect(generateCardRelation.fulfilled.match(result)).toBe(true);
+      expect(store.getState().board.isGeneratingRelation).toBe(false);
+      expect(store.getState().board.relationError).toBeNull();
+      expect(store.getState().board.connections).toHaveLength(1);
+      expect(store.getState().board.connections[0]).toEqual({
+        id: '33333333-3333-4333-8333-333333333333',
+        fromId: cardA.id,
+        toId: cardB.id,
+        description: aiGeneratedDescription,
+        suggestedTags: ['mystery', 'urban'],
+      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:5000/api/generate-relation',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    });
+
+    it('captures server errors without crashing state', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: 'AI generation service is unavailable.' }),
+      } as Response);
+
+      const store = createTestStore({
+        board: seedBoardState({
+          cards: [
+            {
+              id: 'card-a',
+              type: 'character',
+              title: 'Mira',
+              content: 'Hero',
+              tags: [],
+            },
+            {
+              id: 'card-b',
+              type: 'setting',
+              title: 'Quarter',
+              content: 'City',
+              tags: [],
+            },
+          ],
+        }),
+      });
+
+      const result = await store.dispatch(
+        generateCardRelation({ cardAId: 'card-a', cardBId: 'card-b' }),
+      );
+
+      expect(generateCardRelation.rejected.match(result)).toBe(true);
+      expect(store.getState().board.isGeneratingRelation).toBe(false);
+      expect(store.getState().board.relationError).toBe(
+        'AI generation service is unavailable.',
+      );
+      expect(store.getState().board.connections).toHaveLength(0);
+    });
+
+    it('rejects when one or both cards cannot be found', async () => {
+      const store = createTestStore();
+
+      const result = await store.dispatch(
+        generateCardRelation({ cardAId: 'missing-a', cardBId: 'missing-b' }),
+      );
+
+      expect(generateCardRelation.rejected.match(result)).toBe(true);
+      expect(result.payload).toBe('One or both cards could not be found.');
+      expect(store.getState().board.relationError).toBe(
+        'One or both cards could not be found.',
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 

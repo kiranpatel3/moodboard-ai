@@ -5,9 +5,17 @@ import TypeBadge from '../ui/TypeBadge';
 
 interface BoardCardProps {
   card: Card;
+  isSelected?: boolean;
+  onSelect?: (cardId: string) => void;
 }
 
-export default function BoardCard({ card }: BoardCardProps) {
+export default function BoardCard({
+  card,
+  isSelected = false,
+  onSelect,
+}: BoardCardProps) {
+  const isSelectable = Boolean(onSelect);
+
   return (
     <motion.article
       layout
@@ -19,7 +27,30 @@ export default function BoardCard({ card }: BoardCardProps) {
         opacity: { duration: 0.2 },
         scale: { duration: 0.2 },
       }}
-      className="group overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/70 p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-colors hover:border-zinc-700/80 hover:bg-zinc-900"
+      onClick={isSelectable ? () => onSelect?.(card.id) : undefined}
+      onKeyDown={
+        isSelectable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect?.(card.id);
+              }
+            }
+          : undefined
+      }
+      tabIndex={isSelectable ? 0 : undefined}
+      role={isSelectable ? 'button' : undefined}
+      aria-pressed={isSelectable ? isSelected : undefined}
+      aria-label={
+        isSelectable
+          ? `${card.title}. ${isSelected ? 'Selected' : 'Not selected'}. Press to toggle selection.`
+          : undefined
+      }
+      className={`group overflow-hidden rounded-xl border bg-zinc-900/70 p-5 shadow-lg shadow-black/20 backdrop-blur-sm transition-colors ${
+        isSelected
+          ? 'border-indigo-400/60 ring-2 ring-indigo-400/40'
+          : 'border-zinc-800/80 hover:border-zinc-700/80 hover:bg-zinc-900'
+      } ${isSelectable ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300' : ''}`}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <TypeBadge type={card.type} />
