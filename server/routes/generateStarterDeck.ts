@@ -8,7 +8,7 @@ router.post('/', async (req, res) => {
     const genre =
       typeof req.body?.genre === 'string' && req.body.genre.trim().length > 0
         ? req.body.genre.trim()
-        : 'speculative fiction';
+        : 'Fantasy';
 
     const starterDeck = await generateStarterDeck(genre);
 

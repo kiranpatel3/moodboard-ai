@@ -51,8 +51,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(99,102,241,0.08),_transparent_50%)]" />
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-amber-50/20 text-slate-800">
       <main className="relative min-h-screen">
         <AnimatePresence mode="wait">
           {(wizardStep === 'genre' || isGeneratingStarterDeck) && (

@@ -2,10 +2,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 import { starterDeckJsonSchema, type StarterDeckPayload } from '../types/starterDeck.js';
 import {
+  buildStarterDeckSystemPrompt,
   buildStarterDeckUserPrompt,
   ensureUniqueIds,
   parseStarterDeckPayload,
-  STARTER_DECK_SYSTEM_PROMPT,
 } from './starterDeckPrompt.js';
 
 const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-sonnet-20241022';
@@ -18,12 +18,13 @@ export async function generateStarterDeck(genre: string): Promise<StarterDeckPay
   }
 
   const client = new Anthropic({ apiKey });
+  const systemPrompt = buildStarterDeckSystemPrompt(genre);
   const userPrompt = buildStarterDeckUserPrompt(genre);
 
   const response = await client.messages.parse({
     model: process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL,
     max_tokens: 4096,
-    system: STARTER_DECK_SYSTEM_PROMPT,
+    system: systemPrompt,
     messages: [{ role: 'user', content: userPrompt }],
     output_config: {
       format: jsonSchemaOutputFormat(starterDeckJsonSchema),

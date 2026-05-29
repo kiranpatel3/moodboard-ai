@@ -23,10 +23,10 @@ export default function TagFilterBar({
           layout
           type="button"
           onClick={onClearTags}
-          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+          className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${
             !hasActiveFilters
-              ? 'border-zinc-100 bg-zinc-100 text-zinc-950'
-              : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+              ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+              : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50'
           }`}
         >
           All
@@ -41,10 +41,10 @@ export default function TagFilterBar({
               layout
               type="button"
               onClick={() => onToggleTag(tag)}
-              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 ${
                 isSelected
-                  ? 'border-indigo-400/50 bg-indigo-500/15 text-indigo-200'
-                  : 'border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                  ? 'border-indigo-300 bg-indigo-50 text-indigo-800 shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
               #{tag}
@@ -61,7 +61,7 @@ export default function TagFilterBar({
               exit={{ opacity: 0, scale: 0.9 }}
               type="button"
               onClick={onClearTags}
-              className="inline-flex items-center gap-1 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition-colors hover:border-zinc-700 hover:text-zinc-300"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
               Clear

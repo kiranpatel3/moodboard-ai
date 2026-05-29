@@ -6,18 +6,18 @@ const typeStyles: Record<
 > = {
   character: {
     label: 'Character',
-    className: 'border-violet-500/30 bg-violet-500/10 text-violet-300',
-    dotClassName: 'bg-violet-400',
+    className: 'border-violet-200 bg-violet-50 text-violet-800',
+    dotClassName: 'bg-violet-600',
   },
   setting: {
     label: 'Setting',
-    className: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
-    dotClassName: 'bg-cyan-400',
+    className: 'border-cyan-200 bg-cyan-50 text-cyan-800',
+    dotClassName: 'bg-cyan-600',
   },
   plot: {
     label: 'Plot',
-    className: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
-    dotClassName: 'bg-amber-400',
+    className: 'border-amber-200 bg-amber-50 text-amber-800',
+    dotClassName: 'bg-amber-600',
   },
 };
 

@@ -4,23 +4,36 @@ import type {
   StarterDeckPayload,
 } from '../types/starterDeck.js';
 
-export const STARTER_DECK_SYSTEM_PROMPT = `You are an advanced interactive story engine. Based on the user's chosen genre, generate 3 highly distinct character archetypes, 3 unique plot hooks, and 3 immersive world settings. Make sure they all share common narrative threads so they can be combined cohesively.
+const GENRE_GUIDELINES = `Apply these creative guidelines based on the selected genre:
+
+- Wholesome or Inspirational: Focus on uplifting narrative arcs, quirky characters with big dreams, and cozy, bright settings.
+- Rom-Com: Focus on charmingly flawed characters, high-friction/high-humor relationship potentials, and vibrant urban or small-town settings.
+- Mystery: Introduce intriguing character motives, hidden secrets, and atmosphere-heavy locations.
+- Fantasy: Weave vibrant magical rules, mythical backgrounds, and fantastical landscapes.`;
+
+export function buildStarterDeckSystemPrompt(genre: string): string {
+  return `You are a master worldbuilding and storytelling engine. The user has selected the creative genre: ${genre}. Based on this choice, generate highly tailored, creative card sets.
+
+${GENRE_GUIDELINES}
+
+Generate exactly 3 highly distinct character archetypes, 3 unique plot hooks, and 3 immersive world settings. Every card should feel native to the "${genre}" genre while sharing cohesive narrative threads so any combination can be assembled into a compelling story.
 
 Respond only with JSON that matches the required schema. Do not include markdown, code fences, or commentary outside the JSON object.`;
+}
 
 export function buildStarterDeckUserPrompt(genre: string): string {
-  return `Genre: ${genre}
+  return `Creative genre: ${genre}
 
-Generate a starter deck with:
-- characters: 3 highly distinct character archetypes
-- plots: 3 unique plot hooks
-- settings: 3 immersive world settings
+Generate a starter deck with these categorical arrays:
+- characters: exactly 3 character cards tailored to "${genre}"
+- plots: exactly 3 plot hook cards tailored to "${genre}"
+- settings: exactly 3 setting cards tailored to "${genre}"
 
-Each item must include:
-- id: a unique temporary string identifier
-- title: a concise title
-- content: a detailed, vivid description
-- tags: 2-5 tags that reflect shared narrative threads across the full deck`;
+Each card must include:
+- id: a unique temporary string identifier (e.g. "char-1", "plot-2", "setting-3")
+- title: a concise, evocative title
+- content: a detailed, vivid description aligned with the genre guidelines above
+- tags: 2-5 lowercase tags reflecting shared narrative threads across the full deck`;
 }
 
 function parseCardList(
