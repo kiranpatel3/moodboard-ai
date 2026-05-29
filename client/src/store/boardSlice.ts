@@ -6,13 +6,15 @@ import {
 
 export type CardType = 'character' | 'setting' | 'plot';
 
-export interface Card {
+export interface StoryCard {
   id: string;
   type: CardType;
   title: string;
   content: string;
   tags: string[];
 }
+
+export type Card = StoryCard;
 
 export interface Connection {
   id: string;
@@ -22,9 +24,19 @@ export interface Connection {
   suggestedTags?: string[];
 }
 
+export interface AvailableOptions {
+  characters: StoryCard[];
+  plots: StoryCard[];
+  settings: StoryCard[];
+}
+
 export interface BoardState {
   cards: Card[];
   connections: Connection[];
+  availableOptions: AvailableOptions;
+  selectedOptionIds: string[];
+  isGeneratingStarterDeck: boolean;
+  starterDeckError: string | null;
   isGeneratingRelation: boolean;
   relationError: string | null;
 }
@@ -47,11 +59,28 @@ export interface GenerateCardRelationResponse {
   suggestedTags: string[];
 }
 
+export interface StarterDeckResponse {
+  characters: StoryCard[];
+  plots: StoryCard[];
+  settings: StoryCard[];
+}
+
 const GENERATE_RELATION_URL = 'http://localhost:3001/api/generate-relation';
+const GENERATE_STARTER_DECK_URL = `${import.meta.env.VITE_API_URL}/api/generate-starter-deck`;
+
+const emptyAvailableOptions = (): AvailableOptions => ({
+  characters: [],
+  plots: [],
+  settings: [],
+});
 
 const initialState: BoardState = {
   cards: [],
   connections: [],
+  availableOptions: emptyAvailableOptions(),
+  selectedOptionIds: [],
+  isGeneratingStarterDeck: false,
+  starterDeckError: null,
   isGeneratingRelation: false,
   relationError: null,
 };
@@ -64,6 +93,123 @@ function toCardPayload(card: Card) {
     tags: card.tags,
   };
 }
+
+function getAllAvailableOptionCards(options: AvailableOptions): StoryCard[] {
+  return [
+    ...options.characters,
+    ...options.plots,
+    ...options.settings,
+  ];
+}
+
+function isStoryCard(value: unknown, expectedType: CardType): value is StoryCard {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.title === 'string' &&
+    record.title.trim().length > 0 &&
+    typeof record.content === 'string' &&
+    record.content.trim().length > 0 &&
+    record.type === expectedType &&
+    Array.isArray(record.tags) &&
+    record.tags.every((tag) => typeof tag === 'string') &&
+    (record.id === undefined || typeof record.id === 'string')
+  );
+}
+
+function normalizeStoryCards(
+  cards: unknown,
+  expectedType: CardType,
+): StoryCard[] {
+  if (!Array.isArray(cards)) {
+    return [];
+  }
+
+  return cards
+    .filter((card) => isStoryCard(card, expectedType))
+    .map((card) => ({
+      id: card.id ?? crypto.randomUUID(),
+      type: expectedType,
+      title: card.title.trim(),
+      content: card.content.trim(),
+      tags: card.tags.map((tag) => tag.trim()),
+    }));
+}
+
+function parseStarterDeckResponse(payload: unknown): StarterDeckResponse | null {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  return {
+    characters: normalizeStoryCards(record.characters, 'character'),
+    plots: normalizeStoryCards(record.plots, 'plot'),
+    settings: normalizeStoryCards(record.settings, 'setting'),
+  };
+}
+
+export const generateStarterDeck = createAsyncThunk<
+  AvailableOptions,
+  string,
+  { rejectValue: string }
+>('board/generateStarterDeck', async (genre, { rejectWithValue }) => {
+  try {
+    const response = await fetch(GENERATE_STARTER_DECK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ genre }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to generate starter deck.';
+
+      try {
+        const errorBody: unknown = await response.json();
+
+        if (
+          errorBody &&
+          typeof errorBody === 'object' &&
+          'error' in errorBody &&
+          typeof errorBody.error === 'string'
+        ) {
+          errorMessage = errorBody.error;
+        }
+      } catch {
+        // Keep the default error message when the body is not JSON.
+      }
+
+      return rejectWithValue(errorMessage);
+    }
+
+    const payload: unknown = await response.json();
+    const starterDeck = parseStarterDeckResponse(payload);
+
+    if (!starterDeck) {
+      return rejectWithValue('Received an invalid starter deck payload from the server.');
+    }
+
+    const totalCards =
+      starterDeck.characters.length +
+      starterDeck.plots.length +
+      starterDeck.settings.length;
+
+    if (totalCards === 0) {
+      return rejectWithValue('Starter deck did not include any story cards.');
+    }
+
+    return starterDeck;
+  } catch {
+    return rejectWithValue(
+      'Network error while generating starter deck. Please try again.',
+    );
+  }
+});
 
 export const generateCardRelation = createAsyncThunk<
   Connection,
@@ -182,9 +328,44 @@ const boardSlice = createSlice({
         id: crypto.randomUUID(),
       });
     },
+    toggleOptionSelection: (state, action: PayloadAction<string>) => {
+      const optionId = action.payload;
+      const selectedIndex = state.selectedOptionIds.indexOf(optionId);
+
+      if (selectedIndex >= 0) {
+        state.selectedOptionIds.splice(selectedIndex, 1);
+        return;
+      }
+
+      state.selectedOptionIds.push(optionId);
+    },
+    commitSelectedOptions: (state) => {
+      const selectedCards = getAllAvailableOptionCards(state.availableOptions).filter(
+        (card) => state.selectedOptionIds.includes(card.id),
+      );
+
+      state.cards.push(...selectedCards);
+      state.availableOptions = emptyAvailableOptions();
+      state.selectedOptionIds = [];
+    },
   },
   extraReducers: (builder) => {
     builder
+      .addCase(generateStarterDeck.pending, (state) => {
+        state.isGeneratingStarterDeck = true;
+        state.starterDeckError = null;
+      })
+      .addCase(generateStarterDeck.fulfilled, (state, action) => {
+        state.isGeneratingStarterDeck = false;
+        state.starterDeckError = null;
+        state.availableOptions = action.payload;
+        state.selectedOptionIds = [];
+      })
+      .addCase(generateStarterDeck.rejected, (state, action) => {
+        state.isGeneratingStarterDeck = false;
+        state.starterDeckError =
+          action.payload ?? 'Failed to generate starter deck.';
+      })
       .addCase(generateCardRelation.pending, (state) => {
         state.isGeneratingRelation = true;
         state.relationError = null;
@@ -211,5 +392,10 @@ const boardSlice = createSlice({
   },
 });
 
-export const { addCard, addConnection } = boardSlice.actions;
+export const {
+  addCard,
+  addConnection,
+  toggleOptionSelection,
+  commitSelectedOptions,
+} = boardSlice.actions;
 export default boardSlice.reducer;

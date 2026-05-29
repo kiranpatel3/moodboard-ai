@@ -3,11 +3,16 @@ import { configureStore } from '@reduxjs/toolkit';
 import boardReducer, {
   addCard,
   addConnection,
+  commitSelectedOptions,
   generateCardRelation,
+  generateStarterDeck,
+  toggleOptionSelection,
   updateConnectionDescription,
+  type AvailableOptions,
   type BoardState,
   type NewCard,
   type NewConnection,
+  type StoryCard,
 } from './boardSlice';
 
 const sampleCard: NewCard = {
@@ -37,11 +42,49 @@ function seedBoardState(overrides: Partial<BoardState> = {}): BoardState {
   return {
     cards: [],
     connections: [],
+    availableOptions: {
+      characters: [],
+      plots: [],
+      settings: [],
+    },
+    selectedOptionIds: [],
+    isGeneratingStarterDeck: false,
+    starterDeckError: null,
     isGeneratingRelation: false,
     relationError: null,
     ...overrides,
   };
 }
+
+const sampleAvailableOptions: AvailableOptions = {
+  characters: [
+    {
+      id: 'option-character-1',
+      type: 'character',
+      title: 'Mira Ashford',
+      content: 'A cartographer hero.',
+      tags: ['protagonist'],
+    },
+  ],
+  plots: [
+    {
+      id: 'option-plot-1',
+      type: 'plot',
+      title: 'The Cartographer\'s Debt',
+      content: 'A mystery plot thread.',
+      tags: ['mystery'],
+    },
+  ],
+  settings: [
+    {
+      id: 'option-setting-1',
+      type: 'setting',
+      title: 'The Glass Quarter',
+      content: 'Mirrored towers in the city.',
+      tags: ['urban'],
+    },
+  ],
+};
 
 describe('boardSlice', () => {
   beforeEach(() => {
@@ -55,6 +98,14 @@ describe('boardSlice', () => {
       expect(state).toEqual({
         cards: [],
         connections: [],
+        availableOptions: {
+          characters: [],
+          plots: [],
+          settings: [],
+        },
+        selectedOptionIds: [],
+        isGeneratingStarterDeck: false,
+        starterDeckError: null,
         isGeneratingRelation: false,
         relationError: null,
       });
@@ -357,6 +408,64 @@ describe('boardSlice', () => {
     });
   });
 
+  describe('curation flow', () => {
+    it('toggleOptionSelection adds and removes option ids', () => {
+      let state = boardReducer(
+        seedBoardState(),
+        toggleOptionSelection('option-character-1'),
+      );
+
+      expect(state.selectedOptionIds).toEqual(['option-character-1']);
+
+      state = boardReducer(state, toggleOptionSelection('option-character-1'));
+
+      expect(state.selectedOptionIds).toEqual([]);
+    });
+
+    it('commitSelectedOptions moves selected cards into the active board and clears options', () => {
+      const state = boardReducer(
+        seedBoardState({
+          availableOptions: sampleAvailableOptions,
+          selectedOptionIds: ['option-character-1', 'option-setting-1'],
+        }),
+        commitSelectedOptions(),
+      );
+
+      expect(state.cards).toHaveLength(2);
+      expect(state.cards.map((card) => card.id)).toEqual([
+        'option-character-1',
+        'option-setting-1',
+      ]);
+      expect(state.availableOptions).toEqual({
+        characters: [],
+        plots: [],
+        settings: [],
+      });
+      expect(state.selectedOptionIds).toEqual([]);
+    });
+
+    it('generateStarterDeck fulfilled populates availableOptions without replacing active cards', () => {
+      const existingCard: StoryCard = {
+        id: 'active-card-1',
+        type: 'character',
+        title: 'Existing Hero',
+        content: 'Already on the board.',
+        tags: ['existing'],
+      };
+
+      const state = boardReducer(
+        seedBoardState({
+          cards: [existingCard],
+        }),
+        generateStarterDeck.fulfilled(sampleAvailableOptions, 'request-1', 'Cyberpunk'),
+      );
+
+      expect(state.cards).toEqual([existingCard]);
+      expect(state.availableOptions).toEqual(sampleAvailableOptions);
+      expect(state.selectedOptionIds).toEqual([]);
+    });
+  });
+
   describe('generateCardRelation (async thunk integration)', () => {
     const mockFetch = jest.fn();
 
@@ -421,7 +530,7 @@ describe('boardSlice', () => {
         suggestedTags: ['mystery', 'urban'],
       });
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/generate-relation',
+        'http://localhost:3001/api/generate-relation',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

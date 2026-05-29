@@ -1,55 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LayoutGrid, Link2, Sparkles } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { addCard, generateCardRelation, type NewCard } from '../../store/boardSlice';
-import DashboardSkeleton from '../skeletons/DashboardSkeleton';
+import { generateCardRelation } from '../../store/boardSlice';
 import MasonryGrid from './MasonryGrid';
 import TagFilterBar from './TagFilterBar';
-
-const seedCards: NewCard[] = [
-  {
-    type: 'character',
-    title: 'Mira Ashford',
-    content:
-      'A cartographer who maps emotional fault lines instead of terrain. She speaks in coordinates and keeps a ledger of every promise broken in the city.',
-    tags: ['protagonist', 'mystery', 'urban'],
-  },
-  {
-    type: 'setting',
-    title: 'The Glass Quarter',
-    content:
-      'A district of mirrored towers where sunlight refracts into prismatic corridors. Residents trade memories for rent, stored in crystalline vaults beneath the streets.',
-    tags: ['urban', 'sci-fi', 'noir'],
-  },
-  {
-    type: 'plot',
-    title: 'The Cartographer\'s Debt',
-    content:
-      'When Mira discovers her latest map predicts a death rather than a route, she must trace the connection back to the Quarter\'s founding architect — her missing mother.',
-    tags: ['mystery', 'family', 'noir'],
-  },
-  {
-    type: 'character',
-    title: 'Sol Vance',
-    content:
-      'Memory broker and occasional ally. Wears vintage flight goggles indoors. Knows the price of every secret in the Quarter but refuses to sell his own.',
-    tags: ['supporting', 'noir', 'urban'],
-  },
-  {
-    type: 'setting',
-    title: 'Underneath Station 7',
-    content:
-      'Abandoned transit hub converted into a black-market archive. Flickering holographic timetables still announce trains that never arrive.',
-    tags: ['underground', 'mystery', 'sci-fi'],
-  },
-  {
-    type: 'plot',
-    title: 'Fracture Point',
-    content:
-      'Three storylines converge when the Glass Quarter\'s mirrors begin showing events that haven\'t happened yet — starting with Mira\'s own reflection acting independently.',
-    tags: ['sci-fi', 'convergence', 'mystery'],
-  },
-];
 
 function collectTags(cards: { tags: string[] }[]): string[] {
   return [...new Set(cards.flatMap((card) => card.tags))].sort();
@@ -91,20 +45,8 @@ export default function BoardDashboard() {
     (state) => state.board.isGeneratingRelation,
   );
   const relationError = useAppSelector((state) => state.board.relationError);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (cards.length === 0) {
-        seedCards.forEach((card) => dispatch(addCard(card)));
-      }
-      setIsLoading(false);
-    }, 900);
-
-    return () => window.clearTimeout(timer);
-  }, [cards.length, dispatch]);
 
   const allTags = useMemo(() => collectTags(cards), [cards]);
   const filteredCards = useMemo(
@@ -170,14 +112,6 @@ export default function BoardDashboard() {
       }),
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <DashboardSkeleton />
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">

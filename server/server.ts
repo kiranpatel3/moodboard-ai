@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 import connectionsRouter from './routes/connections.js';
 import generateRelationRouter from './routes/generateRelation.js';
+import generateStarterDeckRouter from './routes/generateStarterDeck.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/connections', connectionsRouter);
 app.use('/api/generate-relation', generateRelationRouter);
+app.use('/api/generate-starter-deck', generateStarterDeckRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
