@@ -8,7 +8,7 @@ import {
   parseStarterDeckPayload,
 } from './starterDeckPrompt.js';
 
-const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-6';
 
 export async function generateStarterDeck(
   genre: string,
