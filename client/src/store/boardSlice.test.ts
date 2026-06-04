@@ -327,7 +327,7 @@ describe('boardSlice', () => {
         aiGeneratedDescription,
       );
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/connections/44444444-4444-4444-8444-444444444444',
+        'http://localhost:5000/connections/44444444-4444-4444-8444-444444444444',
         {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -530,7 +530,7 @@ describe('boardSlice', () => {
         suggestedTags: ['mystery', 'urban'],
       });
       expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3001/api/generate-relation',
+        'http://localhost:5000/api/generate-relation',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

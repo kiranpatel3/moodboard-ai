@@ -10,7 +10,9 @@ router.post('/', async (req, res) => {
         ? req.body.genre.trim()
         : 'Fantasy';
 
-    const starterDeck = await generateStarterDeck(genre);
+    const seed = Math.random().toString(36).substring(7);
+
+    const starterDeck = await generateStarterDeck(genre, seed);
 
     res.json(starterDeck);
   } catch (error) {

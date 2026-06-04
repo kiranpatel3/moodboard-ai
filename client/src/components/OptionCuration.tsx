@@ -1,4 +1,4 @@
-import { LayoutGroup, motion } from 'framer-motion';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { Check, Hash, Sparkles, Swords, MapPin, BookOpen } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -107,15 +107,25 @@ function OptionSection({
 
       <LayoutGroup>
         <div className="space-y-3">
-          {options.map((option) => (
-            <OptionCard
-              key={option.id}
-              card={option}
-              isSelected={selectedOptionIds.includes(option.id)}
-              accentClass={accentClass}
-              onToggle={onToggle}
-            />
-          ))}
+          <AnimatePresence mode="wait">
+            {options.map((option) => (
+              <motion.div
+                key={option.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              >
+                <OptionCard
+                  card={option}
+                  isSelected={selectedOptionIds.includes(option.id)}
+                  accentClass={accentClass}
+                  onToggle={onToggle}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </LayoutGroup>
     </section>

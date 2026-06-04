@@ -65,8 +65,12 @@ export interface StarterDeckResponse {
   settings: StoryCard[];
 }
 
-const GENERATE_RELATION_URL = 'http://localhost:3001/api/generate-relation';
-const GENERATE_STARTER_DECK_URL = `${import.meta.env.VITE_API_URL}/api/generate-starter-deck`;
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+).replace(/\/$/, '');
+
+const GENERATE_RELATION_URL = `${API_BASE_URL}/api/generate-relation`;
+const GENERATE_STARTER_DECK_URL = `${API_BASE_URL}/api/generate-starter-deck`;
 
 const emptyAvailableOptions = (): AvailableOptions => ({
   characters: [],
@@ -296,7 +300,7 @@ export const updateConnectionDescription = createAsyncThunk<
   'board/updateConnectionDescription',
   async ({ id, description }, { rejectWithValue }) => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_URL}/connections/${id}`,
+      `${API_BASE_URL}/connections/${id}`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -354,6 +358,8 @@ const boardSlice = createSlice({
       .addCase(generateStarterDeck.pending, (state) => {
         state.isGeneratingStarterDeck = true;
         state.starterDeckError = null;
+        state.availableOptions = emptyAvailableOptions();
+        state.selectedOptionIds = [];
       })
       .addCase(generateStarterDeck.fulfilled, (state, action) => {
         state.isGeneratingStarterDeck = false;

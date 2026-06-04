@@ -10,7 +10,10 @@ import {
 
 const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-sonnet-20241022';
 
-export async function generateStarterDeck(genre: string): Promise<StarterDeckPayload> {
+export async function generateStarterDeck(
+  genre: string,
+  seed: string,
+): Promise<StarterDeckPayload> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
   if (!apiKey) {
@@ -18,7 +21,7 @@ export async function generateStarterDeck(genre: string): Promise<StarterDeckPay
   }
 
   const client = new Anthropic({ apiKey });
-  const systemPrompt = buildStarterDeckSystemPrompt(genre);
+  const systemPrompt = buildStarterDeckSystemPrompt(genre, seed);
   const userPrompt = buildStarterDeckUserPrompt(genre);
 
   const response = await client.messages.parse({

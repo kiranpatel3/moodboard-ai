@@ -11,12 +11,16 @@ const GENRE_GUIDELINES = `Apply these creative guidelines based on the selected 
 - Mystery: Introduce intriguing character motives, hidden secrets, and atmosphere-heavy locations.
 - Fantasy: Weave vibrant magical rules, mythical backgrounds, and fantastical landscapes.`;
 
-export function buildStarterDeckSystemPrompt(genre: string): string {
+export function buildStarterDeckSystemPrompt(genre: string, seed: string): string {
   return `You are a master worldbuilding and storytelling engine. The user has selected the creative genre: ${genre}. Based on this choice, generate highly tailored, creative card sets.
 
 ${GENRE_GUIDELINES}
 
 Generate exactly 3 highly distinct character archetypes, 3 unique plot hooks, and 3 immersive world settings. Every card should feel native to the "${genre}" genre while sharing cohesive narrative threads so any combination can be assembled into a compelling story.
+
+CRITICAL: You must generate an entirely unique dataset for this request. Do not repeat standard, cliché archetypes. Use the randomness seed ${seed} to creatively brainstorm unexpected, fresh character concepts, plot combinations, and settings tailored to this genre.
+
+Request uniqueness seed: ${seed}
 
 Respond only with JSON that matches the required schema. Do not include markdown, code fences, or commentary outside the JSON object.`;
 }
