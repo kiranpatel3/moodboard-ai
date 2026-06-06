@@ -34,7 +34,6 @@ Generate a starter deck with these categorical arrays:
 - settings: exactly 3 setting cards tailored to "${genre}"
 
 Each card must include:
-- id: a unique temporary string identifier (e.g. "char-1", "plot-2", "setting-3")
 - title: a concise, evocative title
 - content: a detailed, vivid description aligned with the genre guidelines above
 - tags: 2-5 lowercase tags reflecting shared narrative threads across the full deck`;
@@ -56,8 +55,6 @@ function parseCardList(
     const record = card as Record<string, unknown>;
 
     if (
-      typeof record.id !== 'string' ||
-      record.id.trim() === '' ||
       typeof record.title !== 'string' ||
       record.title.trim() === '' ||
       typeof record.content !== 'string' ||
@@ -68,8 +65,13 @@ function parseCardList(
       throw new Error(`AI response contains an invalid ${type} card at index ${index}`);
     }
 
+    const id =
+      typeof record.id === 'string' && record.id.trim() !== ''
+        ? record.id.trim()
+        : '';
+
     return {
-      id: record.id.trim(),
+      id,
       type,
       title: record.title.trim(),
       content: record.content.trim(),

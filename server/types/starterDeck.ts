@@ -15,6 +15,58 @@ export interface StarterDeckPayload {
   settings: StarterDeckCard[];
 }
 
+export const geminiStarterDeckResponseSchema = {
+  type: 'object',
+  properties: {
+    characters: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+          tags: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+        required: ['title', 'content', 'tags'],
+      },
+    },
+    plots: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+          tags: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+        required: ['title', 'content', 'tags'],
+      },
+    },
+    settings: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+          tags: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+        required: ['title', 'content', 'tags'],
+      },
+    },
+  },
+  required: ['characters', 'plots', 'settings'],
+} as const;
+
 const starterDeckCardSchema = {
   type: 'object',
   properties: {

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import cors from 'cors';
 import express from 'express';
+import './geminiClient.js';
 import connectionsRouter from './routes/connections.js';
 import generateRelationRouter from './routes/generateRelation.js';
 import generateStarterDeckRouter from './routes/generateStarterDeck.js';

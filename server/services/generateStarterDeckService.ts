@@ -1,6 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
-import { starterDeckJsonSchema, type StarterDeckPayload } from '../types/starterDeck.js';
+import { geminiStarterDeckResponseSchema, type StarterDeckPayload } from '../types/starterDeck.js';
+import { gemini } from '../geminiClient.js';
 import {
   buildStarterDeckSystemPrompt,
   buildStarterDeckUserPrompt,
@@ -8,37 +7,36 @@ import {
   parseStarterDeckPayload,
 } from './starterDeckPrompt.js';
 
-const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-6';
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 export async function generateStarterDeck(
   genre: string,
   seed: string,
 ): Promise<StarterDeckPayload> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY is not configured');
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured');
   }
 
-  const client = new Anthropic({ apiKey });
-  const systemPrompt = buildStarterDeckSystemPrompt(genre, seed);
+  const systemInstruction = buildStarterDeckSystemPrompt(genre, seed);
   const userPrompt = buildStarterDeckUserPrompt(genre);
 
-  const response = await client.messages.parse({
-    model: process.env.ANTHROPIC_MODEL ?? DEFAULT_ANTHROPIC_MODEL,
-    max_tokens: 4096,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-    output_config: {
-      format: jsonSchemaOutputFormat(starterDeckJsonSchema),
+  const response = await gemini.models.generateContent({
+    model: process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL,
+    contents: userPrompt,
+    config: {
+      systemInstruction,
+      responseMimeType: 'application/json',
+      responseSchema: geminiStarterDeckResponseSchema,
     },
   });
 
-  if (!response.parsed_output) {
+  const text = response.text?.trim();
+
+  if (!text) {
     throw new Error('AI response could not be parsed into the expected schema');
   }
 
-  const parsed = parseStarterDeckPayload(JSON.stringify(response.parsed_output));
+  const parsed = parseStarterDeckPayload(text);
 
   return ensureUniqueIds(parsed);
 }

@@ -19,9 +19,9 @@ router.post('/', async (req, res) => {
     const message =
       error instanceof Error ? error.message : 'Unknown generation error';
 
-    if (message.includes('ANTHROPIC_API_KEY is not configured')) {
+    if (message.includes('GEMINI_API_KEY is not configured')) {
       res.status(503).json({
-        error: 'AI generation service is unavailable. Configure ANTHROPIC_API_KEY.',
+        error: 'AI generation service is unavailable. Configure GEMINI_API_KEY.',
         code: 'AI_SERVICE_UNAVAILABLE',
       });
       return;
@@ -41,7 +41,7 @@ router.post('/', async (req, res) => {
       return;
     }
 
-    console.error('[generate-starter-deck]', message);
+    console.error('[generate-starter-deck]', error);
     res.status(502).json({
       error: 'Failed to generate starter deck.',
       code: 'AI_GENERATION_FAILED',
