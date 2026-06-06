@@ -7,6 +7,7 @@ import {
   toggleOptionSelection,
   type StoryCard,
 } from '../store/boardSlice';
+import SelectionHeader from './SelectionHeader';
 
 interface OptionSectionProps {
   title: string;
@@ -170,8 +171,10 @@ export default function OptionCuration() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-amber-50/20">
-      <div className="mx-auto max-w-7xl px-6 pb-32 pt-12">
+    <div className="min-h-screen scroll-pt-24 bg-gradient-to-b from-slate-50 to-amber-50/20">
+      <SelectionHeader />
+
+      <main className="mx-auto max-w-7xl px-6 pb-32 pt-10 sm:pt-12">
         <header className="mb-10 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium uppercase tracking-widest text-slate-500 shadow-sm">
             <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
@@ -215,7 +218,7 @@ export default function OptionCuration() {
             onToggle={handleToggle}
           />
         </div>
-      </div>
+      </main>
 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-6 py-4 shadow-[0_-4px_24px_rgba(15,23,42,0.06)] backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl flex-col items-center gap-3 sm:flex-row sm:justify-between">

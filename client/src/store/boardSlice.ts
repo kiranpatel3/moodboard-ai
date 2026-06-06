@@ -1,5 +1,6 @@
 import {
   createAsyncThunk,
+  createSelector,
   createSlice,
   type PayloadAction,
 } from '@reduxjs/toolkit';
@@ -30,11 +31,23 @@ export interface AvailableOptions {
   settings: StoryCard[];
 }
 
+export interface GenesisFoundation {
+  genre: string;
+  characters: StoryCard[];
+  plots: StoryCard[];
+  settings: StoryCard[];
+  cardIds: string[];
+}
+
 export interface BoardState {
   cards: Card[];
   connections: Connection[];
   availableOptions: AvailableOptions;
   selectedOptionIds: string[];
+  selectedGenre: string | null;
+  genesisFoundation: GenesisFoundation | null;
+  workbenchSlotA: StoryCard | null;
+  workbenchSlotB: StoryCard | null;
   isGeneratingStarterDeck: boolean;
   starterDeckError: string | null;
   isGeneratingRelation: boolean;
@@ -83,6 +96,10 @@ const initialState: BoardState = {
   connections: [],
   availableOptions: emptyAvailableOptions(),
   selectedOptionIds: [],
+  selectedGenre: null,
+  genesisFoundation: null,
+  workbenchSlotA: null,
+  workbenchSlotB: null,
   isGeneratingStarterDeck: false,
   starterDeckError: null,
   isGeneratingRelation: false,
@@ -316,6 +333,11 @@ export const updateConnectionDescription = createAsyncThunk<
   },
 );
 
+function clearWorkbenchState(state: BoardState) {
+  state.workbenchSlotA = null;
+  state.workbenchSlotB = null;
+}
+
 const boardSlice = createSlice({
   name: 'board',
   initialState,
@@ -348,16 +370,38 @@ const boardSlice = createSlice({
         (card) => state.selectedOptionIds.includes(card.id),
       );
 
+      const characters = selectedCards.filter((card) => card.type === 'character');
+      const plots = selectedCards.filter((card) => card.type === 'plot');
+      const settings = selectedCards.filter((card) => card.type === 'setting');
+
+      state.genesisFoundation = {
+        genre: state.selectedGenre ?? 'Unknown',
+        characters,
+        plots,
+        settings,
+        cardIds: selectedCards.map((card) => card.id),
+      };
+
       state.cards.push(...selectedCards);
       state.availableOptions = emptyAvailableOptions();
       state.selectedOptionIds = [];
     },
+    placeInSlotA: (state, action: PayloadAction<StoryCard>) => {
+      state.workbenchSlotA = action.payload;
+    },
+    placeInSlotB: (state, action: PayloadAction<StoryCard>) => {
+      state.workbenchSlotB = action.payload;
+    },
+    clearWorkbenchSlots: (state) => {
+      clearWorkbenchState(state);
+    },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(generateStarterDeck.pending, (state) => {
+      .addCase(generateStarterDeck.pending, (state, action) => {
         state.isGeneratingStarterDeck = true;
         state.starterDeckError = null;
+        state.selectedGenre = action.meta.arg;
         state.availableOptions = emptyAvailableOptions();
         state.selectedOptionIds = [];
       })
@@ -380,6 +424,7 @@ const boardSlice = createSlice({
         state.isGeneratingRelation = false;
         state.relationError = null;
         state.connections.push(action.payload);
+        clearWorkbenchState(state);
       })
       .addCase(generateCardRelation.rejected, (state, action) => {
         state.isGeneratingRelation = false;
@@ -403,5 +448,48 @@ export const {
   addConnection,
   toggleOptionSelection,
   commitSelectedOptions,
+  placeInSlotA,
+  placeInSlotB,
+  clearWorkbenchSlots,
 } = boardSlice.actions;
+
+type BoardRootState = { board: BoardState };
+
+export const selectSelectedGenre = (state: BoardRootState) =>
+  state.board.selectedGenre;
+
+export const selectGenesisFoundation = (state: BoardRootState) =>
+  state.board.genesisFoundation;
+
+export const selectMoodboardCanvasCards = createSelector(
+  [
+    (state: BoardRootState) => state.board.cards,
+    (state: BoardRootState) => state.board.genesisFoundation,
+  ],
+  (cards, genesisFoundation): Card[] => {
+    if (!genesisFoundation) {
+      return cards;
+    }
+
+    const genesisIds = new Set(genesisFoundation.cardIds);
+    return cards.filter((card) => !genesisIds.has(card.id));
+  },
+);
+
+export const selectSelectedCardsData = createSelector(
+  [
+    (state: BoardRootState) => state.board.selectedOptionIds,
+    (state: BoardRootState) => state.board.availableOptions,
+  ],
+  (selectedOptionIds, availableOptions): StoryCard[] => {
+    const cardById = new Map(
+      getAllAvailableOptionCards(availableOptions).map((card) => [card.id, card]),
+    );
+
+    return selectedOptionIds
+      .map((id) => cardById.get(id))
+      .filter((card): card is StoryCard => Boolean(card));
+  },
+);
+
 export default boardSlice.reducer;

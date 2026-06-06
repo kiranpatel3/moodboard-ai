@@ -4,7 +4,10 @@ import boardReducer, {
   addCard,
   addConnection,
   commitSelectedOptions,
+  clearWorkbenchSlots,
   generateCardRelation,
+  placeInSlotA,
+  placeInSlotB,
   generateStarterDeck,
   toggleOptionSelection,
   updateConnectionDescription,
@@ -48,6 +51,10 @@ function seedBoardState(overrides: Partial<BoardState> = {}): BoardState {
       settings: [],
     },
     selectedOptionIds: [],
+    selectedGenre: null,
+    genesisFoundation: null,
+    workbenchSlotA: null,
+    workbenchSlotB: null,
     isGeneratingStarterDeck: false,
     starterDeckError: null,
     isGeneratingRelation: false,
@@ -104,6 +111,10 @@ describe('boardSlice', () => {
           settings: [],
         },
         selectedOptionIds: [],
+        selectedGenre: null,
+        genesisFoundation: null,
+        workbenchSlotA: null,
+        workbenchSlotB: null,
         isGeneratingStarterDeck: false,
         starterDeckError: null,
         isGeneratingRelation: false,
@@ -422,9 +433,30 @@ describe('boardSlice', () => {
       expect(state.selectedOptionIds).toEqual([]);
     });
 
+    it('placeInSlotA and placeInSlotB store cards in workbench slots', () => {
+      let state = boardReducer(seedBoardState(), placeInSlotA(sampleAvailableOptions.characters[0]));
+
+      expect(state.workbenchSlotA).toEqual(sampleAvailableOptions.characters[0]);
+      expect(state.workbenchSlotB).toBeNull();
+
+      state = boardReducer(state, placeInSlotB(sampleAvailableOptions.plots[0]));
+
+      expect(state.workbenchSlotB).toEqual(sampleAvailableOptions.plots[0]);
+    });
+
+    it('clearWorkbenchSlots resets both workbench slots', () => {
+      let state = boardReducer(seedBoardState(), placeInSlotA(sampleAvailableOptions.characters[0]));
+      state = boardReducer(state, placeInSlotB(sampleAvailableOptions.settings[0]));
+      state = boardReducer(state, clearWorkbenchSlots());
+
+      expect(state.workbenchSlotA).toBeNull();
+      expect(state.workbenchSlotB).toBeNull();
+    });
+
     it('commitSelectedOptions moves selected cards into the active board and clears options', () => {
       const state = boardReducer(
         seedBoardState({
+          selectedGenre: 'Fantasy',
           availableOptions: sampleAvailableOptions,
           selectedOptionIds: ['option-character-1', 'option-setting-1'],
         }),
@@ -436,6 +468,13 @@ describe('boardSlice', () => {
         'option-character-1',
         'option-setting-1',
       ]);
+      expect(state.genesisFoundation).toEqual({
+        genre: 'Fantasy',
+        characters: [sampleAvailableOptions.characters[0]],
+        plots: [],
+        settings: [sampleAvailableOptions.settings[0]],
+        cardIds: ['option-character-1', 'option-setting-1'],
+      });
       expect(state.availableOptions).toEqual({
         characters: [],
         plots: [],
@@ -508,6 +547,8 @@ describe('boardSlice', () => {
       );
 
       const [cardA, cardB] = store.getState().board.cards;
+      store.dispatch(placeInSlotA(cardA));
+      store.dispatch(placeInSlotB(cardB));
       const pendingAction = store.dispatch(
         generateCardRelation({ cardAId: cardA.id, cardBId: cardB.id }),
       );
@@ -529,6 +570,8 @@ describe('boardSlice', () => {
         description: aiGeneratedDescription,
         suggestedTags: ['mystery', 'urban'],
       });
+      expect(store.getState().board.workbenchSlotA).toBeNull();
+      expect(store.getState().board.workbenchSlotB).toBeNull();
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:5000/api/generate-relation',
         expect.objectContaining({

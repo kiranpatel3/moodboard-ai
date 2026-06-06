@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { generateStarterDeck } from '../services/generateStarterDeckService.js';
+import { handleAiRouteError } from '../utils/aiRouteErrors.js';
 
 const router = Router();
 
@@ -16,35 +17,10 @@ router.post('/', async (req, res) => {
 
     res.json(starterDeck);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown generation error';
-
-    if (message.includes('GEMINI_API_KEY is not configured')) {
-      res.status(503).json({
-        error: 'AI generation service is unavailable. Configure GEMINI_API_KEY.',
-        code: 'AI_SERVICE_UNAVAILABLE',
-      });
-      return;
-    }
-
-    if (
-      message.includes('could not be parsed') ||
-      message.includes('AI response missing') ||
-      message.includes('AI response contained') ||
-      message.includes('invalid')
-    ) {
-      console.error('[generate-starter-deck] parse error:', message);
-      res.status(502).json({
-        error: 'AI returned an invalid starter deck format.',
-        code: 'AI_RESPONSE_INVALID',
-      });
-      return;
-    }
-
-    console.error('[generate-starter-deck]', error);
-    res.status(502).json({
-      error: 'Failed to generate starter deck.',
-      code: 'AI_GENERATION_FAILED',
+    handleAiRouteError(res, error, {
+      logPrefix: 'generate-starter-deck',
+      invalidFormatMessage: 'AI returned an invalid starter deck format.',
+      failureMessage: 'Failed to generate starter deck.',
     });
   }
 });

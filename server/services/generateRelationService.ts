@@ -1,12 +1,10 @@
 import { relationJsonSchema, type CardContentInput, type RelationPayload } from '../types/relation.js';
-import { gemini } from '../geminiClient.js';
+import { generateGeminiContent } from './geminiGenerate.js';
 import {
   buildRelationUserPrompt,
   parseRelationPayload,
   RELATION_SYSTEM_PROMPT,
 } from './relationPrompt.js';
-
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 export async function generateRelation(
   cardA: CardContentInput,
@@ -18,8 +16,7 @@ export async function generateRelation(
 
   const userPrompt = buildRelationUserPrompt(cardA, cardB);
 
-  const response = await gemini.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL,
+  const response = await generateGeminiContent({
     contents: userPrompt,
     config: {
       systemInstruction: RELATION_SYSTEM_PROMPT,

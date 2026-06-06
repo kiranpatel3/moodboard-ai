@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { CardContentInput } from '../types/relation.js';
 import { generateRelation } from '../services/generateRelationService.js';
+import { handleAiRouteError } from '../utils/aiRouteErrors.js';
 
 const router = Router();
 
@@ -66,33 +67,10 @@ router.post('/', async (req, res) => {
 
     res.json(relation);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown generation error';
-
-    if (message.includes('GEMINI_API_KEY is not configured')) {
-      res.status(503).json({
-        error: 'AI generation service is unavailable. Configure GEMINI_API_KEY.',
-        code: 'AI_SERVICE_UNAVAILABLE',
-      });
-      return;
-    }
-
-    if (
-      message.includes('could not be parsed') ||
-      message.includes('AI response missing')
-    ) {
-      console.error('[generate-relation] parse error:', message);
-      res.status(502).json({
-        error: 'AI returned an invalid response format.',
-        code: 'AI_RESPONSE_INVALID',
-      });
-      return;
-    }
-
-    console.error('[generate-relation]', message);
-    res.status(502).json({
-      error: 'Failed to generate narrative relationship.',
-      code: 'AI_GENERATION_FAILED',
+    handleAiRouteError(res, error, {
+      logPrefix: 'generate-relation',
+      invalidFormatMessage: 'AI returned an invalid response format.',
+      failureMessage: 'Failed to generate narrative relationship.',
     });
   }
 });

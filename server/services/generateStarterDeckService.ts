@@ -1,13 +1,11 @@
 import { geminiStarterDeckResponseSchema, type StarterDeckPayload } from '../types/starterDeck.js';
-import { gemini } from '../geminiClient.js';
+import { generateGeminiContent } from './geminiGenerate.js';
 import {
   buildStarterDeckSystemPrompt,
   buildStarterDeckUserPrompt,
   ensureUniqueIds,
   parseStarterDeckPayload,
 } from './starterDeckPrompt.js';
-
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 export async function generateStarterDeck(
   genre: string,
@@ -20,8 +18,7 @@ export async function generateStarterDeck(
   const systemInstruction = buildStarterDeckSystemPrompt(genre, seed);
   const userPrompt = buildStarterDeckUserPrompt(genre);
 
-  const response = await gemini.models.generateContent({
-    model: process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL,
+  const response = await generateGeminiContent({
     contents: userPrompt,
     config: {
       systemInstruction,
