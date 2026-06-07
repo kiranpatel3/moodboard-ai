@@ -4,6 +4,10 @@ import { gemini } from '../geminiClient.js';
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const FALLBACK_GEMINI_MODELS = ['gemini-2.0-flash', 'gemini-2.5-flash-lite'];
 
+export type GenerateGeminiContentParams = Omit<GenerateContentParameters, 'model'> & {
+  model?: string;
+};
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -47,7 +51,7 @@ function isRetryableGeminiError(error: unknown): boolean {
 }
 
 export async function generateGeminiContent(
-  params: GenerateContentParameters,
+  params: GenerateGeminiContentParams,
 ): Promise<Awaited<ReturnType<typeof gemini.models.generateContent>>> {
   const primaryModel = params.model ?? process.env.GEMINI_MODEL ?? DEFAULT_GEMINI_MODEL;
   const models = [
