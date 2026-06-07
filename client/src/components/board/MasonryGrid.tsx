@@ -9,8 +9,6 @@ interface MasonryGridProps {
   onSelectCard?: (cardId: string) => void;
 }
 
-const dragTransition = { type: 'spring' as const, stiffness: 420, damping: 28 };
-
 export default function MasonryGrid({
   cards,
   selectedCardIds = [],
@@ -29,7 +27,7 @@ export default function MasonryGrid({
               drag
               dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
               dragElastic={1}
-              dragTransition={dragTransition}
+              transition={{ type: 'spring', stiffness: 420, damping: 28 }}
               whileDrag={{ zIndex: 50, scale: 1.03, cursor: 'grabbing' }}
               onDragEnd={(_, info) => handleCardDragEnd(card, info)}
               className="relative mb-4 break-inside-avoid cursor-grab active:cursor-grabbing"
