@@ -46,6 +46,9 @@ export interface BoardState {
   selectedOptionIds: string[];
   selectedGenre: string | null;
   genesisFoundation: GenesisFoundation | null;
+  curationDeckSnapshot: AvailableOptions | null;
+  isEditingCuration: boolean;
+  curationFocus: CardType | null;
   workbenchSlotA: StoryCard | null;
   workbenchSlotB: StoryCard | null;
   isGeneratingStarterDeck: boolean;
@@ -98,6 +101,9 @@ const initialState: BoardState = {
   selectedOptionIds: [],
   selectedGenre: null,
   genesisFoundation: null,
+  curationDeckSnapshot: null,
+  isEditingCuration: false,
+  curationFocus: null,
   workbenchSlotA: null,
   workbenchSlotB: null,
   isGeneratingStarterDeck: false,
@@ -105,6 +111,22 @@ const initialState: BoardState = {
   isGeneratingRelation: false,
   relationError: null,
 };
+
+function cloneAvailableOptions(options: AvailableOptions): AvailableOptions {
+  return {
+    characters: options.characters.map((card) => ({ ...card })),
+    plots: options.plots.map((card) => ({ ...card })),
+    settings: options.settings.map((card) => ({ ...card })),
+  };
+}
+
+function hasAvailableOptions(options: AvailableOptions): boolean {
+  return (
+    options.characters.length > 0 ||
+    options.plots.length > 0 ||
+    options.settings.length > 0
+  );
+}
 
 function toCardPayload(card: Card) {
   return {
@@ -370,6 +392,17 @@ const boardSlice = createSlice({
         (card) => state.selectedOptionIds.includes(card.id),
       );
 
+      if (state.isEditingCuration && state.genesisFoundation) {
+        const previousGenesisIds = new Set(state.genesisFoundation.cardIds);
+
+        state.cards = state.cards.filter((card) => !previousGenesisIds.has(card.id));
+        state.connections = state.connections.filter(
+          (connection) =>
+            !previousGenesisIds.has(connection.fromId) &&
+            !previousGenesisIds.has(connection.toId),
+        );
+      }
+
       const characters = selectedCards.filter((card) => card.type === 'character');
       const plots = selectedCards.filter((card) => card.type === 'plot');
       const settings = selectedCards.filter((card) => card.type === 'setting');
@@ -383,8 +416,11 @@ const boardSlice = createSlice({
       };
 
       state.cards.push(...selectedCards);
+      state.curationDeckSnapshot = cloneAvailableOptions(state.availableOptions);
       state.availableOptions = emptyAvailableOptions();
       state.selectedOptionIds = [];
+      state.isEditingCuration = false;
+      state.curationFocus = null;
     },
     placeInSlotA: (state, action: PayloadAction<StoryCard>) => {
       state.workbenchSlotA = action.payload;
@@ -395,6 +431,40 @@ const boardSlice = createSlice({
     clearWorkbenchSlots: (state) => {
       clearWorkbenchState(state);
     },
+    focusCurationCategory: (state, action: PayloadAction<CardType>) => {
+      state.curationFocus = action.payload;
+    },
+    clearCurationFocus: (state) => {
+      state.curationFocus = null;
+    },
+    openCurationEditor: (state, action: PayloadAction<CardType | undefined>) => {
+      if (!state.curationDeckSnapshot || !state.genesisFoundation) {
+        return;
+      }
+
+      state.availableOptions = cloneAvailableOptions(state.curationDeckSnapshot);
+      state.selectedOptionIds = [...state.genesisFoundation.cardIds];
+      state.isEditingCuration = true;
+      state.curationFocus = action.payload ?? null;
+      clearWorkbenchState(state);
+    },
+    stepBackInWizard: (state) => {
+      if (state.isEditingCuration) {
+        state.isEditingCuration = false;
+        state.curationFocus = null;
+        state.availableOptions = emptyAvailableOptions();
+        state.selectedOptionIds = [];
+        return;
+      }
+
+      if (hasAvailableOptions(state.availableOptions)) {
+        state.availableOptions = emptyAvailableOptions();
+        state.selectedOptionIds = [];
+        state.curationDeckSnapshot = null;
+        state.curationFocus = null;
+      }
+    },
+    resetWorkflow: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -409,7 +479,10 @@ const boardSlice = createSlice({
         state.isGeneratingStarterDeck = false;
         state.starterDeckError = null;
         state.availableOptions = action.payload;
+        state.curationDeckSnapshot = cloneAvailableOptions(action.payload);
         state.selectedOptionIds = [];
+        state.isEditingCuration = false;
+        state.curationFocus = null;
       })
       .addCase(generateStarterDeck.rejected, (state, action) => {
         state.isGeneratingStarterDeck = false;
@@ -451,6 +524,11 @@ export const {
   placeInSlotA,
   placeInSlotB,
   clearWorkbenchSlots,
+  focusCurationCategory,
+  clearCurationFocus,
+  openCurationEditor,
+  stepBackInWizard,
+  resetWorkflow,
 } = boardSlice.actions;
 
 type BoardRootState = { board: BoardState };

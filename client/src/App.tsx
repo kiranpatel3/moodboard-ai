@@ -2,9 +2,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useMemo } from 'react';
 import { useAppSelector } from './store/hooks';
 import type { AvailableOptions } from './store/boardSlice';
-import GenreSelector from './components/GenreSelector';
-import OptionCuration from './components/OptionCuration';
 import BoardDashboard from './components/board/BoardDashboard';
+import GenreSelector from './components/GenreSelector';
+import NavBar from './components/NavBar';
+import OptionCuration from './components/OptionCuration';
 
 type WizardStep = 'genre' | 'curation' | 'canvas';
 
@@ -19,7 +20,12 @@ function hasAvailableOptions(options: AvailableOptions): boolean {
 function resolveWizardStep(
   cardsCount: number,
   options: AvailableOptions,
+  isEditingCuration: boolean,
 ): WizardStep {
+  if (isEditingCuration && hasAvailableOptions(options)) {
+    return 'curation';
+  }
+
   if (cardsCount > 0) {
     return 'canvas';
   }
@@ -41,18 +47,20 @@ const stepTransition = {
 export default function App() {
   const cards = useAppSelector((state) => state.board.cards);
   const availableOptions = useAppSelector((state) => state.board.availableOptions);
+  const isEditingCuration = useAppSelector((state) => state.board.isEditingCuration);
   const isGeneratingStarterDeck = useAppSelector(
     (state) => state.board.isGeneratingStarterDeck,
   );
 
   const wizardStep = useMemo(
-    () => resolveWizardStep(cards.length, availableOptions),
-    [cards.length, availableOptions],
+    () => resolveWizardStep(cards.length, availableOptions, isEditingCuration),
+    [cards.length, availableOptions, isEditingCuration],
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-amber-50/20 text-slate-800">
-      <main className="relative min-h-screen">
+    <div className="min-h-screen bg-[#FAF9F5] text-slate-800">
+      <NavBar />
+      <main className="relative min-h-screen pt-20">
         <AnimatePresence mode="wait">
           {(wizardStep === 'genre' || isGeneratingStarterDeck) && (
             <motion.div

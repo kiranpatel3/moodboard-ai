@@ -1,19 +1,21 @@
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { Check, Hash, Sparkles, Swords, MapPin, BookOpen } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
+  clearCurationFocus,
   commitSelectedOptions,
   toggleOptionSelection,
   type StoryCard,
 } from '../store/boardSlice';
 import SelectionHeader from './SelectionHeader';
+import { cardHoverLift, getCardBodyClass, getCardSelectedRingClass, getCardTagClass, getCardTitleClass, getCardTypeSurfaceClass } from '../utils/cardLayout';
 
 interface OptionSectionProps {
   title: string;
   icon: ReactNode;
-  accentClass: string;
   iconClass: string;
+  sectionId: string;
   options: StoryCard[];
   selectedOptionIds: string[];
   onToggle: (id: string) => void;
@@ -22,12 +24,10 @@ interface OptionSectionProps {
 function OptionCard({
   card,
   isSelected,
-  accentClass,
   onToggle,
 }: {
   card: StoryCard;
   isSelected: boolean;
-  accentClass: string;
   onToggle: (id: string) => void;
 }) {
   return (
@@ -37,42 +37,38 @@ function OptionCard({
       onClick={() => onToggle(card.id)}
       aria-pressed={isSelected}
       aria-label={`${card.title}. ${isSelected ? 'Selected' : 'Not selected'}.`}
-      animate={{ scale: isSelected ? 1.02 : 1 }}
-      whileHover={{ scale: isSelected ? 1.03 : 1.01 }}
+      animate={{ scale: isSelected ? 1.01 : 1 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      className={`relative w-full overflow-hidden rounded-xl border p-4 text-left shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 ${
+      className={`relative w-full overflow-hidden text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF9F5] ${cardHoverLift} ${getCardTypeSurfaceClass(card.type)} p-6 ${
         isSelected
-          ? `${accentClass} ring-2 ring-offset-2 ring-offset-slate-50`
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md'
+          ? `ring-2 ring-offset-2 ring-offset-[#FAF9F5] ${getCardSelectedRingClass(card.type)}`
+          : ''
       }`}
     >
       {isSelected && (
         <motion.span
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm"
+          className="absolute right-3 top-3 inline-flex h-6 w-6 items-center justify-center rounded-lg bg-[#345B50] text-white"
           aria-hidden="true"
         >
           <Check className="h-3.5 w-3.5" strokeWidth={3} />
         </motion.span>
       )}
 
-      <h3 className="pr-8 text-base font-semibold leading-snug text-slate-700">
+      <h3 className={`pr-8 ${getCardTitleClass('compact', card.type)}`}>
         {card.title}
       </h3>
-      <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-slate-500">
+      <p className={`mt-2 line-clamp-4 ${getCardBodyClass(card.type)}`}>
         {card.content}
       </p>
 
       {card.tags.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-1.5">
           {card.tags.map((tag) => (
-            <li
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600"
-            >
-              <Hash className="h-3 w-3 text-slate-500" aria-hidden="true" />
+            <li key={tag} className={`inline-flex items-center gap-1 ${getCardTagClass(card.type)}`}>
+              <Hash className="h-3 w-3 opacity-60" aria-hidden="true" />
               {tag}
             </li>
           ))}
@@ -85,14 +81,14 @@ function OptionCard({
 function OptionSection({
   title,
   icon,
-  accentClass,
   iconClass,
+  sectionId,
   options,
   selectedOptionIds,
   onToggle,
 }: OptionSectionProps) {
   return (
-    <section aria-label={title} className="space-y-4">
+    <section id={sectionId} aria-label={title} className="scroll-mt-40 space-y-4">
       <div className="flex items-center gap-2">
         <span className={iconClass} aria-hidden="true">
           {icon}
@@ -121,7 +117,6 @@ function OptionSection({
                 <OptionCard
                   card={option}
                   isSelected={selectedOptionIds.includes(option.id)}
-                  accentClass={accentClass}
                   onToggle={onToggle}
                 />
               </motion.div>
@@ -137,6 +132,22 @@ export default function OptionCuration() {
   const dispatch = useAppDispatch();
   const availableOptions = useAppSelector((state) => state.board.availableOptions);
   const selectedOptionIds = useAppSelector((state) => state.board.selectedOptionIds);
+  const curationFocus = useAppSelector((state) => state.board.curationFocus);
+  const isEditingCuration = useAppSelector((state) => state.board.isEditingCuration);
+
+  useEffect(() => {
+    if (!curationFocus) {
+      return;
+    }
+
+    const sectionId = `curation-${curationFocus}`;
+    document.getElementById(sectionId)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+
+    dispatch(clearCurationFocus());
+  }, [curationFocus, dispatch]);
 
   const selectionByCategory = useMemo(() => {
     const hasCharacterSelected = availableOptions.characters.some((option) =>
@@ -171,7 +182,7 @@ export default function OptionCuration() {
   };
 
   return (
-    <div className="min-h-screen scroll-pt-24 bg-gradient-to-b from-slate-50 to-amber-50/20">
+    <div className="min-h-screen scroll-pt-36 bg-[#FAF9F5]">
       <SelectionHeader />
 
       <main className="mx-auto max-w-7xl px-6 pb-32 pt-10 sm:pt-12">
@@ -180,39 +191,40 @@ export default function OptionCuration() {
             <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
             Curation
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-800 sm:text-4xl">
-            Curate Your Starter Deck
+          <h1 className="text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl">
+            {isEditingCuration ? 'Modify Your Starter Deck' : 'Curate Your Starter Deck'}
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
-            Choose at least one character, one plot hook, and one setting to
-            assemble your moodboard canvas.
+            {isEditingCuration
+              ? 'Swap any category below. Your other choices stay in place until you re-assemble.'
+              : 'Choose at least one character, one plot hook, and one setting to assemble your moodboard canvas.'}
           </p>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-3">
           <OptionSection
             title="Choose Characters"
+            sectionId="curation-character"
             icon={<Swords className="h-4 w-4" />}
-            iconClass="text-violet-600"
-            accentClass="border-violet-300 bg-violet-50 ring-violet-400/60"
+            iconClass="text-[#7A3E3E]"
             options={availableOptions.characters}
             selectedOptionIds={selectedOptionIds}
             onToggle={handleToggle}
           />
           <OptionSection
             title="Choose Plot Hooks"
+            sectionId="curation-plot"
             icon={<BookOpen className="h-4 w-4" />}
-            iconClass="text-amber-600"
-            accentClass="border-amber-300 bg-amber-50 ring-amber-400/60"
+            iconClass="text-[#63512B]"
             options={availableOptions.plots}
             selectedOptionIds={selectedOptionIds}
             onToggle={handleToggle}
           />
           <OptionSection
             title="Choose Settings"
+            sectionId="curation-setting"
             icon={<MapPin className="h-4 w-4" />}
-            iconClass="text-cyan-600"
-            accentClass="border-cyan-300 bg-cyan-50 ring-cyan-400/60"
+            iconClass="text-[#345B50]"
             options={availableOptions.settings}
             selectedOptionIds={selectedOptionIds}
             onToggle={handleToggle}
@@ -226,7 +238,8 @@ export default function OptionCuration() {
             {!selectionByCategory.hasCharacterSelected && 'Select a character · '}
             {!selectionByCategory.hasPlotSelected && 'Select a plot hook · '}
             {!selectionByCategory.hasSettingSelected && 'Select a setting'}
-            {selectionByCategory.canAssemble && 'Ready to assemble your moodboard.'}
+            {selectionByCategory.canAssemble &&
+              (isEditingCuration ? 'Ready to update your moodboard.' : 'Ready to assemble your moodboard.')}
           </p>
 
           <motion.button
@@ -238,7 +251,7 @@ export default function OptionCuration() {
             className="inline-flex w-full min-w-[16rem] items-center justify-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none sm:w-auto"
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            Assemble My Moodboard
+            {isEditingCuration ? 'Update Moodboard' : 'Assemble My Moodboard'}
           </motion.button>
         </div>
       </div>

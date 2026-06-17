@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
+import { LayoutGroup } from 'framer-motion';
 import { LayoutGrid } from 'lucide-react';
+import type { Card } from '../../store/boardSlice';
 import { useAppSelector } from '../../store/hooks';
 import AIWorkbench from '../AIWorkbench';
 import GenesisSummaryBanner from './GenesisSummaryBanner';
 import MasonryGrid from './MasonryGrid';
+import StoryCardDetailDrawer from './StoryCardDetailDrawer';
 import TagFilterBar from './TagFilterBar';
 import UniverseLedger from './UniverseLedger';
 
@@ -29,7 +32,7 @@ export default function BoardDashboard() {
   const workbenchSlotA = useAppSelector((state) => state.board.workbenchSlotA);
   const workbenchSlotB = useAppSelector((state) => state.board.workbenchSlotB);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
+  const [expandedCard, setExpandedCard] = useState<Card | null>(null);
 
   const allTags = useMemo(() => collectTags(cards), [cards]);
   const filteredMasonryCards = useMemo(
@@ -60,28 +63,18 @@ export default function BoardDashboard() {
     );
   };
 
-  const handleSelectCard = (cardId: string) => {
-    setSelectedCardIds((current) => {
-      if (current.includes(cardId)) {
-        return current.filter((id) => id !== cardId);
-      }
-
-      if (current.length >= 2) {
-        return [current[1], cardId];
-      }
-
-      return [...current, cardId];
-    });
+  const handleOpenCard = (card: Card) => {
+    setExpandedCard(card);
   };
 
   const hasMasonryContent = cards.length > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-amber-50/20">
+    <div className="min-h-screen bg-[#FAF9F5]">
       <GenesisSummaryBanner />
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-7xl p-6">
+        <div className="mb-6 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <section aria-label="Tag filters" className="min-w-0 flex-1">
             <TagFilterBar
               tags={allTags}
@@ -98,13 +91,10 @@ export default function BoardDashboard() {
           </div>
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <LayoutGroup id="story-card-canvas">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <section aria-label="Interactive canvas" className="min-w-0">
-            <div className="relative mx-auto mb-10 max-w-3xl">
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-indigo-100/50 via-white to-rose-100/50 blur-xl"
-              />
+            <div className="relative mx-auto mb-6 max-w-3xl">
               <div className="relative">
                 <AIWorkbench />
               </div>
@@ -113,8 +103,8 @@ export default function BoardDashboard() {
             {hasMasonryContent ? (
               <MasonryGrid
                 cards={draggableMasonryCards}
-                selectedCardIds={selectedCardIds}
-                onSelectCard={handleSelectCard}
+                expandedCardId={expandedCard?.id ?? null}
+                onOpenCard={handleOpenCard}
               />
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-sm">
@@ -158,7 +148,10 @@ export default function BoardDashboard() {
           </section>
 
           <UniverseLedger />
-        </div>
+          </div>
+
+          <StoryCardDetailDrawer card={expandedCard} onClose={() => setExpandedCard(null)} />
+        </LayoutGroup>
       </div>
     </div>
   );

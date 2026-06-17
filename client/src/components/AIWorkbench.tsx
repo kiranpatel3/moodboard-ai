@@ -4,6 +4,7 @@ import { generateCardRelation } from '../store/boardSlice';
 import type { StoryCard } from '../store/boardSlice';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import TypeBadge from './ui/TypeBadge';
+import { NOTEBOOK_LOADING_MESSAGE } from './board/StoryBreadcrumb';
 
 const slotShellStyles = {
   A: {
@@ -31,10 +32,10 @@ function MiniWorkbenchCard({ card }: { card: StoryCard }) {
       className="flex h-full w-full flex-col items-center justify-center gap-2 px-3 py-4 text-center"
     >
       <TypeBadge type={card.type} />
-      <p className="line-clamp-2 text-sm font-semibold leading-snug text-slate-700">
+      <p className="line-clamp-2 text-pretty text-sm font-bold tracking-tight text-slate-800">
         {card.title}
       </p>
-      <p className="line-clamp-3 text-xs leading-relaxed text-slate-500">
+      <p className="line-clamp-3 text-pretty text-xs leading-relaxed text-slate-600">
         {card.content}
       </p>
     </motion.div>
@@ -109,16 +110,18 @@ export default function AIWorkbench() {
   return (
     <section
       aria-label="AI blending workbench"
-      className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-indigo-50/30 to-rose-50/30 p-5 shadow-sm"
+      className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-sm"
     >
-      <div className="mb-4 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+      <div className="mb-6 text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
           Blending Workbench
         </p>
-        <h2 className="mt-1 text-lg font-bold text-slate-800">Forge a Connection</h2>
+        <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-800">
+          Weave Connection
+        </h2>
       </div>
 
-      <div className="mb-5 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+      <div className="mb-6 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
         <WorkbenchSlot slotLabel="Slot A" slotKey="A" card={workbenchSlotA} />
         <div
           aria-hidden="true"
@@ -135,9 +138,7 @@ export default function AIWorkbench() {
         type="button"
         onClick={handleConnect}
         disabled={!bothSlotsFilled || isGeneratingRelation}
-        whileHover={bothSlotsFilled && !isGeneratingRelation ? { scale: 1.02 } : undefined}
-        whileTap={bothSlotsFilled && !isGeneratingRelation ? { scale: 0.98 } : undefined}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-indigo-600 bg-indigo-600 px-5 py-3.5 text-base font-semibold text-white shadow-md transition-colors hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#1E3A31] bg-[#1E3A31] px-5 py-3.5 text-base font-semibold text-white transition-colors duration-200 hover:bg-[#152922] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1E3A31] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF9F5] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
       >
         {isGeneratingRelation ? (
           <span className="inline-flex items-center gap-2">
@@ -151,12 +152,12 @@ export default function AIWorkbench() {
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
             </motion.span>
-            Weaving story threads...
+            {NOTEBOOK_LOADING_MESSAGE}
           </span>
         ) : (
           <>
             <Sparkles className="h-5 w-5" aria-hidden="true" />
-            ✨ Connect with AI ✨
+            Weave Connection
           </>
         )}
       </motion.button>

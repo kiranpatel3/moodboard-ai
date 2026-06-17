@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Connection, StoryCard } from '../../store/boardSlice';
 import { useAppSelector } from '../../store/hooks';
 import StreamingText from './StreamingText';
+import { NOTEBOOK_LOADING_MESSAGE } from './StoryBreadcrumb';
 
 function RelationSkeleton() {
   return (
@@ -83,8 +84,6 @@ function LedgerPanel({ className }: { className?: string }) {
     (state) => state.board.isGeneratingRelation,
   );
   const relationError = useAppSelector((state) => state.board.relationError);
-  const workbenchSlotA = useAppSelector((state) => state.board.workbenchSlotA);
-  const workbenchSlotB = useAppSelector((state) => state.board.workbenchSlotB);
 
   const prevConnectionCount = useRef(connections.length);
   const [streamingConnectionId, setStreamingConnectionId] = useState<string | null>(
@@ -124,14 +123,9 @@ function LedgerPanel({ className }: { className?: string }) {
       >
         {isGeneratingRelation && (
           <article className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-indigo-700">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Forging link
-              {workbenchSlotA && workbenchSlotB && (
-                <span className="font-normal normal-case text-indigo-600">
-                  · {workbenchSlotA.title} ↔ {workbenchSlotB.title}
-                </span>
-              )}
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium tracking-wide text-slate-600">
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden="true" />
+              {NOTEBOOK_LOADING_MESSAGE}
             </div>
             <RelationSkeleton />
           </article>
