@@ -109,6 +109,7 @@ export default function AIWorkbench() {
 
   return (
     <section
+      id="ai-blending-workbench"
       aria-label="AI blending workbench"
       className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-sm"
     >

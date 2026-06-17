@@ -7,6 +7,14 @@ import BoardCard from './BoardCard';
 
 const DRAG_CLICK_THRESHOLD_PX = 8;
 
+function scrollWorkbenchIntoView() {
+  const workbench = document.getElementById('ai-blending-workbench');
+
+  if (workbench) {
+    workbench.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
 interface MasonryGridProps {
   cards: Card[];
   expandedCardId?: string | null;
@@ -35,6 +43,7 @@ export default function MasonryGrid({
               whileDrag={{ zIndex: 50, scale: 1.03, cursor: 'grabbing' }}
               onDragStart={() => {
                 dragDistanceRef.current = 0;
+                scrollWorkbenchIntoView();
               }}
               onDrag={(_, info) => {
                 dragDistanceRef.current = Math.hypot(info.offset.x, info.offset.y);
